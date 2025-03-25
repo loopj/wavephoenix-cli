@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wavephoenix"
+dynamic = ["version"]
+description = "CLI for WavePhoenix, an open-source WaveBird receiver implementation."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "James Smith", email = "james@loopj.com" }]
+dependencies = ["bleak", "tqdm"]
+
+[project.optional-dependencies]
+dev = ["types-tqdm"]
+
+[project.scripts]
+wavephoenix = "wavephoenix.cli:run"
+
+[tool.hatch.version]
+path = "src/wavephoenix/__about__.py"
+
+[tool.hatch.envs.dev]
+features = ["dev"]
+
+[tool.mypy]
+strict = true
