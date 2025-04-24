@@ -6,12 +6,12 @@ Supports scanning for devices in DFU mode, flashing firmware, and dumping versio
 
 ## Installation
 
-### pip
+### uv
 
-WavePhoenix CLI is available on PyPI and can be installed with pip.
+[uv](https://github.com/astral-sh/uv) allows for easy installation of command-line tools provided by Python packages.
 
 ```bash
-pip install wavephoenix
+uv tool install wavephoenix
 ```
 
 ### pipx
@@ -20,6 +20,14 @@ pip install wavephoenix
 
 ```bash
 pipx install wavephoenix
+```
+
+### pip
+
+WavePhoenix CLI is available on PyPI and can be installed with pip.
+
+```bash
+pip install wavephoenix
 ```
 
 ## Entering DFU Mode
