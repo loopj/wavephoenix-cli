@@ -135,7 +135,9 @@ async def get_device_info(client: BleakClient) -> None:
         print(f"Error retrieving device info: {e}")
 
 
-async def ota_firmware_update(client: BleakClient, firmware_file_path: str) -> None:
+async def ota_firmware_update(
+    client: BleakClient, firmware_file_path: str, sync: bool, sleep_ms: float
+) -> None:
     """Perform an OTA firmware update."""
 
     try:
@@ -146,19 +148,25 @@ async def ota_firmware_update(client: BleakClient, firmware_file_path: str) -> N
         await asyncio.sleep(0.5)
 
         file_size = os.path.getsize(firmware_file_path)
-        with open(firmware_file_path, "rb") as firmware_file, tqdm(
-            total=file_size,
-            unit="B",
-            unit_scale=True,
-            desc="Updating",
-            unit_divisor=1024,
-        ) as progress_bar:
+        with (
+            open(firmware_file_path, "rb") as firmware_file,
+            tqdm(
+                total=file_size,
+                unit="B",
+                unit_scale=True,
+                desc="Updating",
+                unit_divisor=1024,
+            ) as progress_bar,
+        ):
             while True:
                 chunk = firmware_file.read(CHUNK_SIZE)
                 if not chunk:
                     break
-                await client.write_gatt_char(OTA_DATA_UUID, chunk, response=False)
-                await asyncio.sleep(0.004)
+                if sync:
+                    await client.write_gatt_char(OTA_DATA_UUID, chunk)
+                else:
+                    await client.write_gatt_char(OTA_DATA_UUID, chunk, response=False)
+                    await asyncio.sleep(sleep_ms / 1000)
                 progress_bar.update(len(chunk))
 
         await asyncio.sleep(0.2)
@@ -198,6 +206,18 @@ async def main() -> None:
     flash_parser.add_argument(
         "--address", type=str, help="Optional BLE device address to flash"
     )
+    flash_parser.add_argument(
+        "--mode",
+        choices=["reliability", "speed"],
+        default="speed",
+        help="Transfer mode: 'reliability' uses write with response, 'speed' uses write without response (default: speed)",
+    )
+    flash_parser.add_argument(
+        "--sleep",
+        type=float,
+        default=5.0,
+        help="Sleep duration in ms between chunks in speed mode (default: 5 ms)",
+    )
 
     # Define the "scan" command
     subparsers.add_parser("scan", help="Scan for WavePhoenix devices in DFU mode")
@@ -235,7 +255,9 @@ async def main() -> None:
 
         try:
             if await check_ota_service_and_characteristics(client):
-                await ota_firmware_update(client, args.firmware)
+                await ota_firmware_update(
+                    client, args.firmware, args.mode == "reliability", args.sleep
+                )
             else:
                 print(
                     "Device does not have the expected OTA service or characteristics."
